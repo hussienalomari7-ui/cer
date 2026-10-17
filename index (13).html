@@ -1,0 +1,1968 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0B0D13">
+  <meta name="description" content="Certificates and verified credentials.">
+  <title>Certificates | Hussien Alomari</title>
+
+  <!-- Fonts: Plus Jakarta Sans (Latin) + Cairo (Arabic) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* =====================================================================
+       DESIGN TOKENS
+       ===================================================================== */
+    :root {
+      --bg: #0B0D13;
+      --text: #ECEEF5;
+      --text-2: #A9AEC2;
+      --text-3: #767B94;
+      --line: rgba(255, 255, 255, 0.08);
+      --line-strong: rgba(255, 255, 255, 0.14);
+
+      --indigo: #6C63FF;   /* electric indigo */
+      --cyan: #3CD6F0;
+      --purple: #7A3CF0;   /* deep purple */
+      --amber: #F6B94A;
+      --emerald: #35D39A;
+
+      --r-lg: 22px;
+      --r-md: 14px;
+      --gutter: clamp(18px, 4vw, 48px);
+      --ease-out: cubic-bezier(0.22, 0.8, 0.24, 1);
+
+      --font: "Plus Jakarta Sans", "Cairo", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      --font-ar: "Cairo", "Tajawal", "Segoe UI", Tahoma, sans-serif;
+
+      color-scheme: dark;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+
+    html {
+      -webkit-text-size-adjust: 100%;
+      background: var(--bg);
+      overflow-x: hidden;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      min-height: 100dvh;
+      font-family: var(--font);
+      color: var(--text);
+      background: var(--bg);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      overflow-x: hidden;
+    }
+
+    body.is-intro,
+    body.is-locked { overflow: hidden; }
+
+    img { display: block; max-width: 100%; }
+    button { font: inherit; color: inherit; }
+    [hidden] { display: none !important; }
+
+    :focus-visible {
+      outline: 2px solid var(--cyan);
+      outline-offset: 3px;
+    }
+    [tabindex="-1"]:focus { outline: none; }
+
+    .sr-only {
+      position: absolute !important;
+      width: 1px; height: 1px;
+      padding: 0; margin: -1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .icon {
+      width: 18px;
+      height: 18px;
+      flex: none;
+      transition: transform 0.35s var(--ease-out);
+    }
+
+    /* =====================================================================
+       AMBIENT BACKGROUND (glows shift with the active certificate)
+       ===================================================================== */
+    .ambient {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .glow {
+      position: absolute;
+      border-radius: 50%;
+      opacity: 0;
+      transition: opacity 1.4s ease;
+    }
+    .glow--indigo { width: 70vmax; height: 70vmax; left: -26vmax; top: -32vmax; background: radial-gradient(closest-side, rgba(108, 99, 255, 0.42), rgba(108, 99, 255, 0)); }
+    .glow--cyan   { width: 60vmax; height: 60vmax; right: -24vmax; top: 8vh;    background: radial-gradient(closest-side, rgba(60, 214, 240, 0.24), rgba(60, 214, 240, 0)); }
+    .glow--purple { width: 76vmax; height: 76vmax; left: 12vw; bottom: -48vmax;  background: radial-gradient(closest-side, rgba(122, 60, 240, 0.38), rgba(122, 60, 240, 0)); }
+    .glow--amber  { width: 56vmax; height: 56vmax; right: -16vmax; bottom: -26vmax; background: radial-gradient(closest-side, rgba(246, 185, 74, 0.2), rgba(246, 185, 74, 0)); }
+
+    .ambient[data-tone="0"] .glow--indigo { opacity: 1; }
+    .ambient[data-tone="0"] .glow--cyan   { opacity: 0.55; }
+    .ambient[data-tone="0"] .glow--purple { opacity: 0.7; }
+
+    .ambient[data-tone="1"] .glow--indigo { opacity: 0.5; }
+    .ambient[data-tone="1"] .glow--cyan   { opacity: 1; }
+    .ambient[data-tone="1"] .glow--purple { opacity: 0.55; }
+
+    .ambient[data-tone="2"] .glow--indigo { opacity: 0.55; }
+    .ambient[data-tone="2"] .glow--cyan   { opacity: 0.35; }
+    .ambient[data-tone="2"] .glow--purple { opacity: 1; }
+
+    .ambient[data-tone="end"] .glow--indigo { opacity: 0.3; }
+    .ambient[data-tone="end"] .glow--purple { opacity: 0.55; }
+    .ambient[data-tone="end"] .glow--amber  { opacity: 1; }
+
+    .grain {
+      position: absolute;
+      inset: 0;
+      opacity: 0.05;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+    }
+
+    .ambient::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at center, transparent 45%, rgba(5, 6, 10, 0.55));
+    }
+
+    /* =====================================================================
+       PHASE 1 — CINEMATIC INTRO
+       ===================================================================== */
+    .intro {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      background: #000;
+      overflow: hidden;
+      transition: opacity 1s ease 0.1s;
+    }
+
+    .intro__video {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;          /* keeps the original aspect ratio on every screen */
+      background: #000;
+      transition: transform 1.2s var(--ease-out), filter 1.2s ease;
+    }
+
+    .intro.is-gated .intro__video { filter: brightness(0.4) blur(2px); }
+
+    .intro.is-leaving { opacity: 0; pointer-events: none; }
+    .intro.is-leaving .intro__video { transform: scale(0.9); filter: blur(6px) brightness(0.8); }
+
+    /* "Enter experience" gate (only shown when the browser blocks sound autoplay) */
+    .intro__gate {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 18px;
+      text-align: center;
+      padding: 24px;
+      animation: fade-in 0.8s ease both;
+    }
+
+    .gate-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 18px;
+      padding: 8px;
+      border: 0;
+      background: none;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 500;
+      letter-spacing: 0.01em;
+      border-radius: 24px;
+    }
+
+    .gate-btn__ring {
+      width: 92px;
+      height: 92px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      -webkit-backdrop-filter: blur(16px);
+      backdrop-filter: blur(16px);
+      transition: transform 0.45s var(--ease-out), background 0.4s, box-shadow 0.5s;
+    }
+    .gate-btn__ring .icon { width: 26px; height: 26px; margin-left: 4px; }
+
+    .gate-btn:hover .gate-btn__ring {
+      transform: scale(1.06);
+      background: rgba(255, 255, 255, 0.1);
+      box-shadow: 0 0 0 12px rgba(255, 255, 255, 0.04), 0 0 70px rgba(108, 99, 255, 0.4);
+    }
+
+    .gate-hint {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0;
+      font-size: 13px;
+      color: var(--text-3);
+    }
+    .gate-hint .icon { width: 15px; height: 15px; }
+
+    .intro__controls {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 3;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 0 max(20px, env(safe-area-inset-right)) max(24px, calc(env(safe-area-inset-bottom) + 12px)) max(20px, env(safe-area-inset-left));
+      pointer-events: none;
+      animation: fade-in 0.8s ease 0.7s both;
+    }
+    .intro__controls > * { pointer-events: auto; }
+
+    .intro:not(.is-playing) .sound-btn { opacity: 0; visibility: hidden; }
+    .sound-btn { transition: opacity 0.4s, visibility 0.4s, background 0.3s, border-color 0.3s; }
+    .skip-btn { margin-left: auto; }
+    .skip-btn:hover .icon { transform: translateX(3px); }
+
+    .intro__progress {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 3;
+      height: 2px;
+      background: rgba(255, 255, 255, 0.08);
+      opacity: 0;
+      transition: opacity 0.6s;
+    }
+    .intro.is-playing .intro__progress { opacity: 1; }
+    .intro__progress span {
+      display: block;
+      height: 100%;
+      background: linear-gradient(90deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.85));
+      transform-origin: left center;
+      transform: scaleX(0);
+    }
+
+    @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+
+    /* Shared glass pill (Skip intro, sound toggle, card chips) */
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      height: 38px;
+      padding: 0 15px;
+      border-radius: 999px;
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 500;
+      line-height: 1;
+      white-space: nowrap;
+      background: rgba(12, 14, 22, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      -webkit-backdrop-filter: blur(16px) saturate(140%);
+      backdrop-filter: blur(16px) saturate(140%);
+    }
+    .chip .icon { width: 16px; height: 16px; }
+    button.chip { cursor: pointer; transition: background 0.3s, border-color 0.3s, opacity 0.4s; }
+    button.chip:hover { background: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.24); }
+
+    /* =====================================================================
+       PHASE 2 — SHOWCASE LAYOUT
+       ===================================================================== */
+    .app {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: clip;             /* off-screen slides never widen the page on mobile */
+      transform: scale(0.97);
+      transition: transform 1.4s var(--ease-out);
+    }
+    body.is-revealed .app { transform: none; }
+
+    .shell {
+      width: min(1200px, calc(100% - 2 * var(--gutter)));
+      margin-inline: auto;
+    }
+
+    /* Header */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding-top: calc(clamp(18px, 3vw, 32px) + env(safe-area-inset-top));
+    }
+
+    .identity {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .identity__mark {
+      width: 42px;
+      height: 42px;
+      flex: none;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      border: 1.5px solid transparent;
+      background:
+        linear-gradient(var(--bg), var(--bg)) padding-box,
+        linear-gradient(135deg, var(--indigo), var(--cyan) 55%, var(--purple)) border-box;
+    }
+
+    .identity__name {
+      margin: 0;
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .identity__role {
+      margin: 0;
+      font-size: 13px;
+      color: var(--text-3);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .ghost-btn {
+      flex: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      height: 40px;
+      padding: 0 16px;
+      border-radius: 999px;
+      border: 1px solid var(--line-strong);
+      background: rgba(255, 255, 255, 0.03);
+      color: var(--text-2);
+      font-size: 13.5px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: color 0.25s, border-color 0.25s, background 0.25s;
+    }
+    .ghost-btn:hover { color: var(--text); border-color: rgba(255, 255, 255, 0.24); background: rgba(255, 255, 255, 0.06); }
+    .ghost-btn:hover .icon { transform: rotate(-140deg); }
+
+    /* Heading row */
+    .showcase { padding-top: clamp(24px, 4vw, 48px); }
+
+    .showcase__head {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 14px 24px;
+      flex-wrap: wrap;
+    }
+
+    .showcase__title {
+      margin: 0;
+      font-size: clamp(34px, 4.6vw, 52px);
+      line-height: 1.02;
+      font-weight: 600;
+      letter-spacing: -0.035em;
+    }
+
+    .showcase__intro {
+      margin: 12px 0 0;
+      max-width: 54ch;
+      color: var(--text-2);
+      font-size: clamp(15px, 1.3vw, 16.5px);
+    }
+
+    .counter {
+      margin: 0;
+      font-size: 14px;
+      color: var(--text-3);
+      font-variant-numeric: tabular-nums;
+    }
+    .counter strong { color: var(--text); font-weight: 600; }
+
+    /* =====================================================================
+       STAGE + SLIDES
+       Every slide sits in the same grid cell, so the stage always takes
+       the height of the tallest slide (no jumping, no absolute positioning).
+       ===================================================================== */
+    .stage {
+      display: grid;
+      margin-top: clamp(22px, 3vw, 36px);
+      touch-action: pan-y;
+    }
+
+    .slide {
+      grid-area: 1 / 1;
+      display: grid;
+      grid-template-columns: minmax(0, 1.12fr) minmax(0, 1fr);
+      gap: clamp(20px, 3.5vw, 48px);
+      align-items: center;
+      opacity: 0;
+      visibility: hidden;
+      transform: translate3d(var(--shift, 0px), 0, 0);
+      transition: opacity 0.55s ease, transform 0.75s var(--ease-out), visibility 0s linear 0.75s;
+    }
+    .slide.is-before { --shift: -56px; }
+    .slide.is-after  { --shift: 56px; }
+    .slide.is-active {
+      --shift: 0px;
+      opacity: 1;
+      visibility: visible;
+      transition: opacity 0.6s ease 0.06s, transform 0.75s var(--ease-out), visibility 0s;
+    }
+    .slide.is-dragging { transition: none; }
+
+    /* Per-slide accent tones */
+    .slide[data-tone="0"] { --tone-a: var(--indigo); --tone-b: var(--cyan); }
+    .slide[data-tone="1"] { --tone-a: var(--cyan);   --tone-b: var(--indigo); }
+    .slide[data-tone="2"] { --tone-a: var(--purple); --tone-b: #B18CFF; }
+    .slide[data-tone="end"] { --tone-a: var(--amber); --tone-b: #FFD98A; }
+
+    /* Staggered entrance of the info column (runs on navigation and on reveal) */
+    .slide__info > * {
+      transition: opacity 0.6s ease, transform 0.7s var(--ease-out);
+    }
+    .slide:not(.is-active) .slide__info > *,
+    body:not(.is-revealed) .slide__info > * {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    .slide__info > :nth-child(2) { --d: 1; }
+    .slide__info > :nth-child(3) { --d: 2; }
+    .slide__info > :nth-child(4) { --d: 3; }
+    .slide__info > :nth-child(5) { --d: 4; }
+    .slide__info > :nth-child(6) { --d: 5; }
+    .slide__info > :nth-child(7) { --d: 6; }
+    .slide.is-active .slide__info > * {
+      transition-delay: calc(var(--base, 0.12s) + var(--d, 0) * 55ms);
+    }
+    body.is-intro .slide__info > * { --base: 0.5s; }
+
+    /* ---------- Left: certificate preview card ---------- */
+    .slide__preview {
+      perspective: 1400px;
+      transition: transform 0.8s var(--ease-out);
+    }
+    .slide:not(.is-active) .slide__preview { transform: scale(0.965); }
+
+    .card {
+      position: relative;
+      aspect-ratio: 1.414 / 1;
+      border-radius: var(--r-lg);
+      transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+      transition: transform 0.7s var(--ease-out);
+    }
+    .card.is-tilting { transition: transform 0.15s ease-out; }
+
+    .card__frame {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      isolation: isolate;
+      border-radius: inherit;
+      background: #0D0F18;
+      border: 1px solid var(--line-strong);
+      cursor: zoom-in;
+      box-shadow:
+        0 50px 100px -40px rgba(0, 0, 0, 0.9),
+        0 0 90px -30px color-mix(in srgb, var(--tone-a) 55%, transparent);
+    }
+
+    .card__backdrop {
+      position: absolute;
+      inset: -12%;
+      width: 124%;
+      height: 124%;
+      max-width: none;
+      object-fit: cover;
+      filter: blur(30px) saturate(1.3) brightness(0.5);
+      z-index: 0;
+    }
+
+    .card__img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;          /* never crops a real certificate scan */
+      padding: clamp(12px, 3%, 24px);
+      z-index: 1;
+      transition: transform 0.9s var(--ease-out);
+    }
+    .card:hover .card__img { transform: scale(1.035); }
+
+    .card__sheen {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      pointer-events: none;
+      background: radial-gradient(520px circle at var(--mx, 50%) var(--my, 30%), rgba(255, 255, 255, 0.14), transparent 45%);
+      opacity: 0;
+      transition: opacity 0.5s;
+    }
+    .card:hover .card__sheen { opacity: 1; }
+
+    .card__frame::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 3;
+      pointer-events: none;
+      border-radius: inherit;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 30%, transparent 70%, rgba(0, 0, 0, 0.35));
+    }
+
+    .card__badge  { position: absolute; top: 14px; left: 14px; z-index: 4; }
+    .card__badge .icon { color: var(--tone-b); }
+    .card__expand { position: absolute; right: 14px; bottom: 14px; z-index: 4; }
+    .card__expand:hover .icon { transform: scale(1.12); }
+
+    /* ---------- Right: info panel ---------- */
+    .panel {
+      position: relative;
+      padding: clamp(22px, 2.6vw, 34px);
+      border-radius: var(--r-lg);
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.015)),
+        rgba(14, 16, 25, 0.5);
+      border: 1px solid var(--line);
+      -webkit-backdrop-filter: blur(16px) saturate(140%);
+      backdrop-filter: blur(16px) saturate(140%);
+      box-shadow: 0 30px 80px -45px rgba(0, 0, 0, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    }
+
+    .issuer {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .issuer__mark {
+      width: 44px;
+      height: 44px;
+      flex: none;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      color: #fff;
+      background: linear-gradient(135deg,
+        color-mix(in srgb, var(--tone-a) 80%, #000),
+        color-mix(in srgb, var(--tone-b) 55%, #000));
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 8px 24px -10px var(--tone-a);
+    }
+    .issuer__mark img { width: 100%; height: 100%; object-fit: contain; background: #fff; padding: 6px; }
+
+    .issuer__name {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 500;
+      line-height: 1.35;
+      color: var(--text-2);
+    }
+
+    .slide__title {
+      margin: 18px 0 0;
+      font-size: clamp(26px, 2.6vw, 36px);
+      line-height: 1.12;
+      font-weight: 600;
+      letter-spacing: -0.025em;
+      text-wrap: balance;
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px 40px;
+      margin: 18px 0 0;
+      padding-top: 16px;
+      border-top: 1px solid var(--line);
+    }
+    .meta dt { margin-bottom: 4px; font-size: 12.5px; color: var(--text-3); }
+    .meta dd {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0;
+      font-size: 15px;
+      font-weight: 500;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .copy-btn {
+      width: 28px;
+      height: 28px;
+      display: grid;
+      place-items: center;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.03);
+      color: var(--text-3);
+      cursor: pointer;
+      transition: color 0.25s, border-color 0.25s, background 0.25s;
+    }
+    .copy-btn .icon { width: 14px; height: 14px; }
+    .copy-btn:hover { color: var(--text); border-color: var(--line-strong); }
+    .copy-btn.is-copied { color: var(--emerald); border-color: rgba(53, 211, 154, 0.4); }
+
+    .slide__desc {
+      margin: 16px 0 0;
+      max-width: 60ch;
+      font-size: 15.5px;
+      line-height: 1.65;
+      color: var(--text-2);
+    }
+
+    .skills {
+      list-style: none;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 18px 0 0;
+      padding: 0;
+    }
+    .skills li {
+      padding: 7px 12px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-2);
+      background: rgba(255, 255, 255, 0.035);
+      border: 1px solid var(--line);
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 22px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      height: 46px;
+      padding: 0 20px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-size: 14.5px;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      transition: transform 0.3s var(--ease-out), box-shadow 0.3s, background 0.3s, border-color 0.3s;
+    }
+    .btn--primary {
+      color: #fff;
+      background: var(--indigo);
+      box-shadow: 0 10px 30px -12px rgba(108, 99, 255, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    }
+    .btn--primary:hover {
+      transform: translateY(-1px);
+      background: #7A72FF;
+      box-shadow: 0 16px 40px -14px rgba(108, 99, 255, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    }
+    .btn--ghost {
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.04);
+      border-color: var(--line-strong);
+    }
+    .btn--ghost:hover { background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.24); }
+
+    /* =====================================================================
+       PHASE 3 — THE ENDING SLIDE (locked vault + Arabic teaser)
+       ===================================================================== */
+    .vault {
+      position: relative;
+      aspect-ratio: 1.414 / 1;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      border-radius: var(--r-lg);
+      border: 1px dashed rgba(246, 185, 74, 0.24);
+      background:
+        radial-gradient(ellipse at 50% 55%, rgba(246, 185, 74, 0.1), transparent 60%),
+        rgba(12, 13, 20, 0.45);
+    }
+
+    .vault__sheet {
+      position: absolute;
+      width: 54%;
+      aspect-ratio: 1.414 / 1;
+      border-radius: 12px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.02));
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      box-shadow: 0 30px 60px -30px rgba(0, 0, 0, 0.9);
+      filter: blur(0.6px);
+      transition: transform 1s var(--ease-out) 0.1s;
+    }
+    .vault__sheet::before {
+      content: "";
+      position: absolute;
+      inset: 24% 18% auto;
+      height: 36%;
+      border-radius: 2px;
+      opacity: 0.6;
+      background: repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0 3px, transparent 3px 16px);
+    }
+    .slide--end.is-active .vault__sheet--1 { transform: rotate(-9deg) translate(-17%, 5%); }
+    .slide--end.is-active .vault__sheet--2 { transform: rotate(2deg) translate(0, -5%); }
+    .slide--end.is-active .vault__sheet--3 { transform: rotate(10deg) translate(17%, 7%); }
+
+    .vault__lock {
+      position: relative;
+      z-index: 2;
+      width: 78px;
+      height: 78px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      color: var(--amber);
+      background: rgba(20, 18, 14, 0.55);
+      border: 1px solid rgba(246, 185, 74, 0.35);
+      -webkit-backdrop-filter: blur(16px);
+      backdrop-filter: blur(16px);
+      box-shadow: 0 0 0 10px rgba(246, 185, 74, 0.05), 0 0 70px rgba(246, 185, 74, 0.3);
+    }
+    .vault__lock .icon { width: 28px; height: 28px; }
+
+    .panel--end { font-family: var(--font-ar); }
+
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin: 0;
+      padding: 8px 14px;
+      border-radius: 999px;
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 1.3;
+    }
+    .status--amber {
+      --c: var(--amber);
+      color: #F9D08C;
+      background: rgba(246, 185, 74, 0.08);
+      border: 1px solid rgba(246, 185, 74, 0.26);
+    }
+    .status--emerald {
+      --c: var(--emerald);
+      color: #BDEFD9;
+      background: rgba(53, 211, 154, 0.06);
+      border: 1px solid rgba(53, 211, 154, 0.22);
+      -webkit-backdrop-filter: blur(16px);
+      backdrop-filter: blur(16px);
+    }
+
+    .pulse {
+      position: relative;
+      width: 9px;
+      height: 9px;
+      flex: none;
+      border-radius: 50%;
+      background: var(--c);
+      box-shadow: 0 0 10px var(--c), 0 0 22px var(--c);
+    }
+    .pulse::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      background: var(--c);
+      animation: pulse 2.4s cubic-bezier(0.2, 0.6, 0.3, 1) infinite;
+    }
+    @keyframes pulse {
+      0% { transform: scale(1); opacity: 0.75; }
+      80%, 100% { transform: scale(3.4); opacity: 0; }
+    }
+
+    .teaser {
+      margin: 22px 0 0;
+      font-size: clamp(20px, 2.1vw, 26px);
+      line-height: 1.85;
+      font-weight: 600;
+      color: var(--text);
+      text-wrap: pretty;
+    }
+
+    .panel--end .btn { margin-top: 28px; font-family: var(--font-ar); }
+
+    /* =====================================================================
+       NAVIGATION CONTROLS
+       ===================================================================== */
+    .head-nav {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .head-nav__buttons { display: flex; gap: 10px; }
+
+    .nav-btn {
+      flex: none;
+      width: 52px;
+      height: 52px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      color: var(--text);
+      cursor: pointer;
+      background: rgba(16, 18, 28, 0.55);
+      border: 1px solid var(--line-strong);
+      -webkit-backdrop-filter: blur(16px);
+      backdrop-filter: blur(16px);
+      box-shadow: 0 10px 30px -15px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+      transition: background 0.3s, border-color 0.3s, transform 0.3s var(--ease-out), opacity 0.3s;
+    }
+    .nav-btn .icon { width: 22px; height: 22px; }
+    .nav-btn:not([aria-disabled="true"]):hover { background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.26); }
+    .nav-btn--next:not([aria-disabled="true"]):hover .icon { transform: translateX(3px); }
+    .nav-btn--prev:not([aria-disabled="true"]):hover .icon { transform: translateX(-3px); }
+    .nav-btn:not([aria-disabled="true"]):active { transform: scale(0.94); }
+    .nav-btn[aria-disabled="true"] { opacity: 0.3; cursor: not-allowed; }
+
+    /* Segmented progress bar: one segment per certificate + one for the ending */
+    .progress {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: clamp(20px, 3vw, 30px);
+    }
+
+    .seg {
+      position: relative;
+      flex: 1;
+      height: 28px;
+      padding: 0;
+      border: 0;
+      background: none;
+      cursor: pointer;
+      border-radius: 6px;
+    }
+    .seg::before,
+    .seg::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 50%;
+      height: 3px;
+      margin-top: -1.5px;
+      border-radius: 3px;
+    }
+    .seg::before { background: rgba(255, 255, 255, 0.1); transition: background 0.3s; }
+    .seg:hover::before { background: rgba(255, 255, 255, 0.2); }
+    .seg::after {
+      background: linear-gradient(90deg, var(--indigo), var(--cyan));
+      transform-origin: left center;
+      transform: scaleX(0);
+      transition: transform 0.6s var(--ease-out), box-shadow 0.6s;
+    }
+    .seg.is-filled::after { transform: scaleX(1); }
+    .seg.is-current::after { box-shadow: 0 0 14px rgba(60, 214, 240, 0.6); }
+
+    .seg--end { flex: 0.6; }
+    .seg--end::before { background: repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.2) 0 6px, transparent 6px 11px); }
+    .seg--end::after { background: linear-gradient(90deg, var(--amber), #FFD98A); }
+    .seg--end.is-current::after { box-shadow: 0 0 14px rgba(246, 185, 74, 0.6); }
+
+    /* =====================================================================
+       FOOTER (persistent status indicator)
+       ===================================================================== */
+    .site-footer {
+      margin-top: auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 14px 24px;
+      padding-top: clamp(40px, 6vw, 72px);
+      padding-bottom: calc(clamp(20px, 3vw, 28px) + env(safe-area-inset-bottom));
+    }
+
+    .status--footer {
+      font-family: var(--font-ar);
+      font-size: 13.5px;
+      font-weight: 500;
+    }
+
+    .footer-note { margin: 0; font-size: 13px; color: var(--text-3); }
+
+    /* =====================================================================
+       LIGHTBOX (full-size view)
+       ===================================================================== */
+    .lightbox {
+      position: fixed;
+      inset: 0;
+      z-index: 60;
+      display: grid;
+      place-items: center;
+      padding: max(64px, calc(env(safe-area-inset-top) + 56px)) clamp(14px, 4vw, 48px) max(24px, env(safe-area-inset-bottom));
+      background: rgba(5, 6, 10, 0.84);
+      -webkit-backdrop-filter: blur(12px);
+      backdrop-filter: blur(12px);
+      opacity: 0;
+      transition: opacity 0.35s ease;
+    }
+    .lightbox.is-open { opacity: 1; }
+
+    .lightbox__figure {
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      max-width: min(1400px, 100%);
+      transform: scale(0.96);
+      transition: transform 0.45s var(--ease-out);
+    }
+    .lightbox.is-open .lightbox__figure { transform: none; }
+
+    .lightbox__img {
+      max-width: 100%;
+      max-height: calc(100dvh - 170px);
+      object-fit: contain;
+      border-radius: 12px;
+      box-shadow: 0 40px 120px -30px rgba(0, 0, 0, 0.9);
+    }
+
+    .lightbox__caption { text-align: center; font-size: 14px; color: var(--text-2); }
+    .lightbox__caption strong { display: block; margin-bottom: 2px; font-size: 15px; font-weight: 600; color: var(--text); }
+
+    .lightbox__close {
+      position: absolute;
+      top: max(16px, env(safe-area-inset-top));
+      right: max(16px, env(safe-area-inset-right));
+      width: 44px;
+      height: 44px;
+      padding: 0;
+      justify-content: center;
+    }
+
+    /* =====================================================================
+       RESPONSIVE
+       ===================================================================== */
+    @media (max-width: 960px) {
+      /* Stacked layout: the stage follows the active slide's height instead of the tallest one */
+      .stage { position: relative; display: block; }
+      .slide:not(.is-active) { position: absolute; top: 0; left: 0; right: 0; max-height: 100%; overflow: hidden; }
+      .slide {
+        grid-template-columns: minmax(0, 1fr);
+        align-items: start;
+        align-content: start;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .label-sm-hidden {
+        position: absolute !important;
+        width: 1px; height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
+      }
+      .ghost-btn { width: 40px; padding: 0; justify-content: center; }
+      .card__badge, .card__expand { height: 32px; padding: 0 12px; font-size: 12px; }
+      .card__badge { top: 10px; left: 10px; }
+      .card__expand { right: 10px; bottom: 10px; width: 32px; padding: 0; justify-content: center; }
+      .nav-btn { width: 46px; height: 46px; }
+      .head-nav { width: 100%; justify-content: space-between; }
+      .slide__desc { font-size: 15px; }
+      .meta { gap: 14px 28px; }
+      .status--footer { font-size: 13px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.2s !important;
+        transition-delay: 0s !important;
+      }
+      .slide { --shift: 0px !important; }
+      .app, .intro.is-leaving .intro__video { transform: none !important; }
+    }
+    /* =====================================================================
+       تعديلات تكبير الصورة والنصوص واستغلال المساحة الفارغة
+       ===================================================================== */
+
+    /* 1. توسيع عرض الصفحة الكلي لتكبير حجم الصورة والبطاقة تلقائياً */
+    .shell {
+      width: min(1420px, calc(100% - 2 * var(--gutter)));
+    }
+
+    /* 2. توسيط قسم الشهادات عمودياً للقضاء على الفراغ السفلي الكبير */
+    .showcase {
+      margin-block: auto;
+      padding-block: clamp(20px, 3vh, 40px);
+    }
+
+    .site-footer {
+      padding-top: clamp(24px, 3.5vh, 44px);
+    }
+
+    /* 3. إعطاء صورة الشهادة مساحة أكبر وموازنة طول البطاقة اليمنى معها */
+    .slide {
+      grid-template-columns: minmax(0, 1.18fr) minmax(0, 1fr);
+      gap: clamp(24px, 3.5vw, 54px);
+      align-items: stretch;
+    }
+
+    .panel {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: clamp(28px, 3.2vw, 46px);
+    }
+
+    /* 4. تكبير خط الوصف (Description) ليكون مريحاً للقراءة */
+    .slide__desc {
+      margin: 22px 0 0;
+      max-width: 62ch;
+      font-size: clamp(16.5px, 1.3vw, 18.5px);
+      line-height: 1.75;
+    }
+
+    /* 5. تكبير التاغات / المهارات (Tags) */
+    .skills {
+      gap: 10px;
+      margin: 26px 0 0;
+    }
+
+    .skills li {
+      padding: 10px 18px;
+      font-size: clamp(14px, 1.05vw, 15.5px);
+    }
+
+    /* 6. تحسين تناسق اسم الجهة المانحة والعنوان مع الحجم الجديد */
+    .issuer__mark {
+      width: 48px;
+      height: 48px;
+      font-size: 15px;
+    }
+
+    .issuer__name {
+      font-size: 15.5px;
+    }
+
+    .slide__title {
+      margin: 20px 0 0;
+      font-size: clamp(28px, 2.7vw, 40px);
+    }
+  </style>
+</head>
+
+<body class="is-intro">
+
+  <!-- Ambient background -->
+  <div class="ambient" id="ambient" data-tone="0" aria-hidden="true">
+    <span class="glow glow--indigo"></span>
+    <span class="glow glow--cyan"></span>
+    <span class="glow glow--purple"></span>
+    <span class="glow glow--amber"></span>
+    <span class="grain"></span>
+  </div>
+
+  <!-- ===================================================================
+       PHASE 1 — CINEMATIC INTRO
+       =================================================================== -->
+  <section class="intro" id="intro" aria-label="Intro video">
+    <!--
+      🎬 INTRO VIDEO SOURCE
+      Replace src="cer.mp4" with your own file, for example src="your-intro.mp4",
+      or with a full URL such as src="https://your-cdn.com/intro.mp4".
+      A relative path means the video file sits in the same folder as this HTML file.
+      If the video is missing or fails to load, the page skips straight to the showcase.
+    -->
+    <video
+      class="intro__video"
+      id="introVideo"
+      src="cer.mp4"
+      playsinline
+      preload="auto"
+      disablepictureinpicture
+      disableremoteplayback
+      controlslist="nodownload noplaybackrate nofullscreen noremoteplayback"></video>
+
+    <!-- Shown only when the browser blocks autoplay with sound -->
+    <div class="intro__gate" id="introGate" hidden>
+      <button class="gate-btn" id="enterBtn" type="button">
+        <span class="gate-btn__ring">
+          <svg class="icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><path d="M7 4.5v15a1 1 0 0 0 1.52.85l12-7.5a1 1 0 0 0 0-1.7l-12-7.5A1 1 0 0 0 7 4.5z"/></svg>
+        </span>
+        <span>Enter experience</span>
+      </button>
+      <p class="gate-hint">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+        Plays with sound
+      </p>
+    </div>
+
+    <div class="intro__controls">
+      <button class="chip sound-btn" id="soundBtn" type="button" aria-pressed="false">
+        <svg class="icon icon-sound-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+        <svg class="icon icon-sound-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" hidden><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="22" x2="16" y1="9" y2="15"/><line x1="16" x2="22" y1="9" y2="15"/></svg>
+        <span id="soundLabel">Mute</span>
+      </button>
+      <button class="chip skip-btn" id="skipBtn" type="button">
+        <span>Skip intro</span>
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" x2="19" y1="5" y2="19"/></svg>
+      </button>
+    </div>
+
+    <div class="intro__progress" aria-hidden="true"><span id="introProgress"></span></div>
+  </section>
+
+  <!-- ===================================================================
+       PHASE 2 — CERTIFICATE SHOWCASE
+       =================================================================== -->
+  <div class="app" id="app" inert>
+    <header class="topbar shell">
+      <div class="identity">
+        <span class="identity__mark" id="ownerMark" aria-hidden="true"></span>
+        <div style="min-width:0">
+          <p class="identity__name" id="ownerName"></p>
+          <p class="identity__role" id="ownerRole"></p>
+        </div>
+      </div>
+      <button class="ghost-btn" id="replayBtn" type="button">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+        <span class="label-sm-hidden">Replay intro</span>
+      </button>
+    </header>
+
+    <main class="showcase shell">
+      <div class="showcase__head">
+        <div>
+          <h1 class="showcase__title" id="pageTitle" tabindex="-1"></h1>
+          <p class="showcase__intro" id="pageIntro"></p>
+        </div>
+        <nav class="head-nav" aria-label="Certificate navigation">
+          <p class="counter" id="counter" aria-live="polite"></p>
+          <div class="head-nav__buttons">
+            <button class="nav-btn nav-btn--prev" id="prevBtn" type="button" aria-label="Previous certificate">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m15 18-6-6 6-6"/></svg>
+            </button>
+            <button class="nav-btn nav-btn--next" id="nextBtn" type="button" aria-label="Next certificate">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m9 18 6-6-6-6"/></svg>
+            </button>
+          </div>
+        </nav>
+      </div>
+
+      <!-- Slides are rendered here from certificatesData (see script) -->
+      <div class="stage" id="stage" role="region" aria-roledescription="carousel" aria-label="Certificates"></div>
+
+      <!-- Progress: one segment per certificate + one for the ending -->
+      <div class="progress" id="progress" role="group" aria-label="Choose a certificate"></div>
+    </main>
+
+    <footer class="site-footer shell">
+      <p class="status status--emerald status--footer" dir="rtl" lang="ar">
+        <span class="pulse" aria-hidden="true"></span>
+        <span id="footerStatus"></span>
+      </p>
+      <p class="footer-note" id="footerNote"></p>
+    </footer>
+  </div>
+
+  <!-- Full-size viewer -->
+  <div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Certificate, full size" hidden>
+    <button class="chip lightbox__close" id="lightboxClose" type="button" aria-label="Close full size view">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+    </button>
+    <figure class="lightbox__figure">
+      <img class="lightbox__img" id="lightboxImg" alt="">
+      <figcaption class="lightbox__caption" id="lightboxCaption"></figcaption>
+    </figure>
+  </div>
+
+  <!-- Screen-reader announcements (e.g. "Credential ID copied") -->
+  <p class="sr-only" id="announcer" aria-live="polite"></p>
+
+  <script>
+  (() => {
+    "use strict";
+
+    /* =====================================================================
+       1) PAGE SETTINGS — the text shown in the header, heading and footer
+       ===================================================================== */
+    const CONFIG = {
+      ownerName: "Hussien Alomari",
+      ownerRole: "Data Science & AI Engineer",
+      pageTitle: "Certificates",
+      pageIntro: "Credentials earned across machine learning, data engineering and applied data science."
+    };
+
+    /* =====================================================================
+       2) certificatesData — THE SINGLE SOURCE OF TRUTH
+       ---------------------------------------------------------------------
+       To ADD a certificate: copy one object, paste it where you want it in
+       the list, and edit its values. To REMOVE one: delete its object.
+       The slides, progress bar, counter and footer all update on their own.
+
+       Fields
+         id            Unique number. Also used for share links: page.html#certificate-2
+         title         Certificate name
+         issuer        Organisation that issued it
+         issueDate     "2025-03-14" or "2025-03" (formatted automatically), or any text
+         skills        Array of short skill tags
+         description   One short paragraph
+         image         Path or URL to the certificate image, e.g. "certs/ml.jpg".
+                       Leave it "" to show a generated certificate artwork instead.
+         credentialUrl Verification link. Use "#" as a placeholder until you have one.
+
+       Optional fields
+         credentialId  Shown in the info panel with a copy button
+         issuerLogo    Path or URL to the issuer's logo (otherwise initials are shown)
+       ===================================================================== */
+    const certificatesData = [
+      {
+        id: 1,
+        title: "Full Stack Development Course",
+        issuer: "Stack Soft Academy & Contemporary Cryptography Solutions",
+        issueDate: "2025",
+        credentialId: "AIA-MLS-25-04817",
+        skills: ["Front-End Development", "Back-End Development", "Database Management", "Full Stack Web Development"],
+        description: "Successfully completed an intensive 240-hour accredited training course in Full Stack Web Development with excellence and distinction.",
+        image: "ESDA8071.JPG",
+        credentialUrl: "#"
+      },
+      {
+        id: 2,
+        title: "Exploratory Data Analysis for Machine Learning",
+        issuer: "IBM (via Coursera)",
+        issueDate: "2026",
+        skills: [
+    "Exploratory Data Analysis (EDA)", "Feature Engineering & Selection",
+    "Data Preprocessing & Cleansing",
+    "Statistical Hypothesis Testing",
+    "Data Retrieval (SQL, NoSQL, APIs)",
+    "Outlier Detection & Feature Scaling"
+  ],
+description: "Completed the foundational 5-module course of the IBM Machine Learning Professional Certificate. Mastered end-to-end data preparation pipelines, including multi-source data retrieval (SQL, NoSQL, APIs, Cloud), advanced data cleansing, handling missing values and outliers, feature engineering and scaling, and conducting statistical hypothesis testing.",        image: "c1.png",
+        credentialUrl: "#"
+      },
+      
+      {
+        id: 3,
+        title: "Supervised Machine Learning",
+        issuer: "IBM (via Coursera)",
+        issueDate: "2026",
+        skills: [
+          "Regression & Classification Modeling",
+          "Tree Ensembles (Random Forest & Decision Trees)",
+          "Linear & Logistic Regression",
+          "Model Training & Evaluation",
+          "Data Preprocessing & Cleansing",
+          "Scikit-Learn"
+        ],
+        description: "Completed comprehensive training across IBM's Supervised Machine Learning tracks, mastering both regression and classification paradigms. Built, trained, and optimized end-to-end predictive models using Scikit-Learn—including Linear and Logistic Regression, Decision Trees, and Random Forest ensembles—while applying rigorous data preprocessing, feature scaling, and model evaluation metrics.",
+        image: "cer1.png", // ضع هنا اسم صورة الشهادة التي اخترتها
+        credentialUrl: "#"
+      },
+      {
+        id: 4,
+        title: "Unsupervised Machine Learning",
+        issuer: "IBM (via Coursera)",
+        issueDate: "2026",
+        credentialId: "ZNY03WXHQ0X7",
+        skills: [
+          "Unsupervised Learning & Clustering",
+          "Dimensionality Reduction",
+          "Curse of Dimensionality",
+          "Performance Metrics & Model Evaluation",
+          "Text Mining & Data Preprocessing",
+          "Scikit-Learn"
+        ],
+        description: "Successfully completed the IBM Unsupervised Machine Learning course. Mastered discovering hidden insights and patterns in unlabeled data sets, implementing common clustering and dimensionality-reduction algorithms, overcoming the curse of dimensionality, and applying best practices for performance evaluation and cluster characterization using Scikit-Learn.",
+        image: "machin2.png", // أو قم بتسمية صورة الشهادة وضبط اسم الملف هنا
+        credentialUrl: "https://www.coursera.org/verify/ZNY03WXHQ0X7"
+      } ,
+      {
+        id: 5,
+        title: "Human Research: Data or Specimens Only Research",
+        issuer: "CITI Program (Massachusetts Institute of Technology Affiliates)",
+        issueDate: "2026", // الاكتفاء بالسنة فقط كما طلبت
+        credentialId: "79577695",
+        skills: [
+          "Human Research Ethics",
+          "Data & Specimens Research Compliance",
+          "Regulatory Frameworks & Oversight",
+          "Informed Consent & Privacy Protection",
+          "Research Integrity & Data Governance"
+        ],
+        description: "Successfully completed the CITI Program Basic Course in Human Research, focusing specifically on Data or Specimens Only Research under the requirements set by Massachusetts Institute of Technology Affiliates. Covered core ethical principles, regulatory requirements, privacy regulations, and compliance standards for secondary research using human data and biological specimens.",
+        image: "c4.png", // أو ضع اسم ملف صورة الشهادة الخاص بك هنا
+        credentialUrl: "https://www.citiprogram.org/verify/?w59caa153-e5a7-4daf-ad0b-92bba35e0781-79577695"
+      }
+
+      // ➕ Add the next certificate here: copy an object above, paste it, and edit it.
+    ];
+
+    /* =====================================================================
+       3) ENDING MESSAGE (shown after the last certificate)
+       ===================================================================== */
+    const ENDING = {
+      status: "قيد التحديث",
+      message: "وصلنا إلى نهاية العرض الحالي — هذا ما سُمح بنشره في الفترة الحالية. هناك المزيد خلف الكواليس، وسيتم التحديث دورياً.",
+      restartLabel: "العودة إلى الشهادة الأولى"
+    };
+
+    /* ---------------------------------------------------------------------
+       Everything below renders and runs the page. No edits needed.
+       --------------------------------------------------------------------- */
+
+    const $ = (sel, root = document) => root.querySelector(sel);
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const finePointer = window.matchMedia("(hover: hover) and (pointer: fine)");
+
+    const TONES = [
+      { a: "#6C63FF", b: "#3CD6F0" },
+      { a: "#3CD6F0", b: "#6C63FF" },
+      { a: "#7A3CF0", b: "#B18CFF" }
+    ];
+
+    const svgIcon = (inner, fill = "none") =>
+      `<svg class="icon" viewBox="0 0 24 24" fill="${fill}" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${inner}</svg>`;
+
+    const ICONS = {
+      award: svgIcon('<circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/>'),
+      expand: svgIcon('<polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" x2="14" y1="3" y2="10"/><line x1="3" x2="10" y1="21" y2="14"/>'),
+      copy: svgIcon('<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>'),
+      check: svgIcon('<path d="M20 6 9 17l-5-5"/>'),
+      shield: svgIcon('<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/>'),
+      lock: svgIcon('<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>'),
+      restart: svgIcon('<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>')
+    };
+
+    const escapeHTML = (value = "") =>
+      String(value).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+    function formatDate(value) {
+      if (!value) return "";
+      const m = /^(\d{4})-(\d{2})(?:-(\d{2}))?$/.exec(String(value).trim());
+      if (!m) return String(value);
+      const date = new Date(Date.UTC(+m[1], +m[2] - 1, m[3] ? +m[3] : 1));
+      const opts = { month: "long", year: "numeric", timeZone: "UTC" };
+      if (m[3]) opts.day = "numeric";
+      return new Intl.DateTimeFormat("en", opts).format(date);
+    }
+
+    const yearOf = value => (/(\d{4})/.exec(String(value || "")) || [])[1] || "";
+
+    function initials(name) {
+      const skip = /^(of|and|the|for|&|in|at)$/i;
+      return String(name || "")
+        .trim()
+        .split(/\s+/)
+        .filter(w => w && !skip.test(w))
+        .slice(0, 2)
+        .map(w => w[0])
+        .join("")
+        .toUpperCase();
+    }
+
+    // Arabic count with correct grammar: 1, 2, 3–10, 11+
+    function arabicCount(n) {
+      const num = n.toLocaleString("ar-u-nu-arab");
+      if (n === 1) return "شهادة واحدة منشورة حالياً";
+      if (n === 2) return "شهادتان منشورتان حالياً";
+      if (n >= 3 && n <= 10) return `${num} شهادات منشورة حالياً`;
+      return `${num} شهادة منشورة حالياً`;
+    }
+
+    // Generated certificate artwork, used when `image` is empty or fails to load
+    function placeholderCertificate(cert, toneIndex) {
+      const x = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&apos;" }[c]));
+      const tone = TONES[toneIndex % TONES.length];
+      const title = cert.title || "Certificate";
+      const size = Math.max(36, Math.min(68, Math.floor(1150 / Math.max(1, title.length * 0.56))));
+      const date = formatDate(cert.issueDate);
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1414" height="1000" viewBox="0 0 1414 1000">
+        <defs>
+          <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#171B2C"/><stop offset="1" stop-color="#0C0E17"/></linearGradient>
+          <linearGradient id="ac" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${tone.a}"/><stop offset="1" stop-color="${tone.b}"/></linearGradient>
+          <radialGradient id="gl" cx=".5" cy="0" r=".85"><stop offset="0" stop-color="${tone.a}" stop-opacity=".24"/><stop offset="1" stop-color="${tone.a}" stop-opacity="0"/></radialGradient>
+        </defs>
+        <rect width="1414" height="1000" fill="url(#bg)"/>
+        <rect width="1414" height="1000" fill="url(#gl)"/>
+        <rect x="44" y="44" width="1326" height="912" rx="10" fill="none" stroke="url(#ac)" stroke-opacity=".6" stroke-width="2"/>
+        <rect x="64" y="64" width="1286" height="872" rx="6" fill="none" stroke="#FFFFFF" stroke-opacity=".07"/>
+        <text x="707" y="232" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="30" letter-spacing="6" fill="#9CA2BA">Certificate of Achievement</text>
+        <text x="707" y="300" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="22" fill="#6F7590">This certifies the successful completion of</text>
+        <text x="707" y="440" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="${size}" fill="#F3F4F9">${x(title)}</text>
+        <rect x="557" y="488" width="300" height="2" fill="url(#ac)"/>
+        <text x="707" y="562" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="26" fill="#A7ADC4">Awarded by ${x(cert.issuer)}</text>
+        <text x="707" y="606" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="22" fill="#737891">${x(date)}</text>
+        <g transform="translate(707 782)">
+          <circle r="64" fill="none" stroke="url(#ac)" stroke-width="2"/>
+          <circle r="52" fill="none" stroke="#FFFFFF" stroke-opacity=".14" stroke-dasharray="3 6"/>
+          <path d="M-20 2 l13 13 l28 -30" fill="none" stroke="url(#ac)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+        </g>
+        ${cert.credentialId ? `<text x="707" y="902" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="16" letter-spacing="2" fill="#5E6480">ID ${x(cert.credentialId)}</text>` : ""}
+      </svg>`;
+      return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+    }
+
+    /* ---------------------------------------------------------------------
+       Element references
+       --------------------------------------------------------------------- */
+    const body = document.body;
+    const app = $("#app");
+    const ambient = $("#ambient");
+    const stage = $("#stage");
+    const progress = $("#progress");
+    const counter = $("#counter");
+    const prevBtn = $("#prevBtn");
+    const nextBtn = $("#nextBtn");
+    const pageTitle = $("#pageTitle");
+    const announcer = $("#announcer");
+
+    const introEl = $("#intro");
+    const video = $("#introVideo");
+    const gate = $("#introGate");
+    const enterBtn = $("#enterBtn");
+    const skipBtn = $("#skipBtn");
+    const soundBtn = $("#soundBtn");
+    const soundLabel = $("#soundLabel");
+    const introBar = $("#introProgress");
+    const replayBtn = $("#replayBtn");
+
+    const lightbox = $("#lightbox");
+    const lbImg = $("#lightboxImg");
+    const lbCaption = $("#lightboxCaption");
+    const lbClose = $("#lightboxClose");
+
+    const certCount = certificatesData.length;
+    let slides = [];
+    let segments = [];
+    let current = -1;
+
+    /* ---------------------------------------------------------------------
+       Static text from CONFIG
+       --------------------------------------------------------------------- */
+    function renderChrome() {
+      document.title = `${CONFIG.pageTitle} | ${CONFIG.ownerName}`;
+      $("#ownerMark").textContent = initials(CONFIG.ownerName);
+      $("#ownerName").textContent = CONFIG.ownerName;
+      $("#ownerRole").textContent = CONFIG.ownerRole;
+      pageTitle.textContent = CONFIG.pageTitle;
+      $("#pageIntro").textContent = CONFIG.pageIntro;
+      $("#footerStatus").textContent = certCount
+        ? `${arabicCount(certCount)}، والمزيد خلف الكواليس`
+        : "العرض قيد الإعداد، والمزيد خلف الكواليس";
+      $("#footerNote").textContent = `© ${new Date().getFullYear()} ${CONFIG.ownerName}`;
+    }
+
+    /* ---------------------------------------------------------------------
+       Slides
+       --------------------------------------------------------------------- */
+    function certificateSlide(cert, i, total) {
+      const tone = i % TONES.length;
+      const src = cert.image ? cert.image : placeholderCertificate(cert, tone);
+      const year = yearOf(cert.issueDate);
+      const alt = `${cert.title} certificate, issued by ${cert.issuer}`;
+
+      const issuerMark = cert.issuerLogo
+        ? `<span class="issuer__mark"><img src="${escapeHTML(cert.issuerLogo)}" alt="" loading="lazy"></span>`
+        : `<span class="issuer__mark" aria-hidden="true">${escapeHTML(initials(cert.issuer))}</span>`;
+
+      const skills = Array.isArray(cert.skills) && cert.skills.length
+        ? `<ul class="skills" aria-label="Skills">${cert.skills.map(s => `<li>${escapeHTML(s)}</li>`).join("")}</ul>`
+        : "";
+
+      return `
+        <article class="slide" data-index="${i}" data-id="${escapeHTML(cert.id)}" data-tone="${tone}" role="group" aria-roledescription="slide" aria-label="${i + 1} of ${total}: ${escapeHTML(cert.title)}">
+          <div class="slide__preview">
+            <div class="card">
+              <div class="card__frame" data-cert="${i}">
+                <img class="card__backdrop" src="${escapeHTML(src)}" alt="" aria-hidden="true" data-cert-img="${i}" decoding="async">
+                <img class="card__img" src="${escapeHTML(src)}" alt="${escapeHTML(alt)}" data-cert-img="${i}" decoding="async"${i === 0 ? ' fetchpriority="high"' : ""}>
+                <span class="card__sheen" aria-hidden="true"></span>
+              </div>
+              ${year ? `<span class="chip card__badge">${ICONS.award}<span>${escapeHTML(year)}</span></span>` : ""}
+              <button class="chip card__expand" type="button" data-action="expand" data-cert="${i}" aria-label="View ${escapeHTML(cert.title)} full size">${ICONS.expand}<span class="label-sm-hidden">View full size</span></button>
+            </div>
+          </div>
+          <div class="slide__info panel">
+            <div class="issuer">${issuerMark}<p class="issuer__name">${escapeHTML(cert.issuer)}</p></div>
+            <h2 class="slide__title" tabindex="-1">${escapeHTML(cert.title)}</h2>
+            ${cert.description ? `<p class="slide__desc">${escapeHTML(cert.description)}</p>` : ""}
+            ${skills}
+          </div>
+        </article>`;
+    }
+
+    function endingSlide(total) {
+      const i = total - 1;
+      return `
+        <article class="slide slide--end" data-index="${i}" data-tone="end" role="group" aria-roledescription="slide" aria-label="${total} of ${total}">
+          <div class="slide__preview">
+            <div class="vault" aria-hidden="true">
+              <span class="vault__sheet vault__sheet--1"></span>
+              <span class="vault__sheet vault__sheet--2"></span>
+              <span class="vault__sheet vault__sheet--3"></span>
+              <span class="vault__lock">${ICONS.lock}</span>
+            </div>
+          </div>
+          <div class="slide__info panel panel--end" dir="rtl" lang="ar">
+            <p class="status status--amber"><span class="pulse" aria-hidden="true"></span><span>${escapeHTML(ENDING.status)}</span></p>
+            <p class="teaser" tabindex="-1">${escapeHTML(ENDING.message)}</p>
+            ${certCount ? `<div><button class="btn btn--ghost" type="button" data-action="restart">${ICONS.restart}<span>${escapeHTML(ENDING.restartLabel)}</span></button></div>` : ""}
+          </div>
+        </article>`;
+    }
+
+    function renderSlides() {
+      const total = certCount + 1;
+      stage.innerHTML = certificatesData.map((c, i) => certificateSlide(c, i, total)).join("") + endingSlide(total);
+      slides = Array.from(stage.querySelectorAll(".slide"));
+
+      progress.innerHTML = slides.map((_, i) => {
+        const isEnd = i === total - 1;
+        const label = isEnd ? "Go to the end of the showcase" : `Go to certificate ${i + 1}: ${certificatesData[i].title}`;
+        const tip = isEnd ? "More coming soon" : certificatesData[i].title;
+        return `<button class="seg${isEnd ? " seg--end" : ""}" type="button" data-goto="${i}" aria-label="${escapeHTML(label)}" title="${escapeHTML(tip)}"></button>`;
+      }).join("");
+      segments = Array.from(progress.querySelectorAll(".seg"));
+
+      // Images that already failed before listeners existed
+      stage.querySelectorAll("img[data-cert-img]").forEach(img => {
+        if (img.complete && img.naturalWidth === 0) useFallbackImage(img);
+      });
+    }
+
+    function useFallbackImage(img) {
+      if (img.dataset.fallback) return;
+      const i = Number(img.dataset.certImg);
+      img.dataset.fallback = "1";
+      img.src = placeholderCertificate(certificatesData[i], i % TONES.length);
+    }
+
+    // Image errors don't bubble, so listen in the capture phase
+    stage.addEventListener("error", e => {
+      const img = e.target;
+      if (img && img.tagName === "IMG" && img.dataset.certImg !== undefined) useFallbackImage(img);
+    }, true);
+
+    /* ---------------------------------------------------------------------
+       Navigation
+       --------------------------------------------------------------------- */
+    function goTo(index, { focus = false } = {}) {
+      const last = slides.length - 1;
+      const next = Math.max(0, Math.min(last, index));
+      if (next === current) return;
+      current = next;
+
+      slides.forEach((slide, i) => {
+        slide.classList.toggle("is-active", i === current);
+        slide.classList.toggle("is-before", i < current);
+        slide.classList.toggle("is-after", i > current);
+        slide.inert = i !== current;
+        slide.setAttribute("aria-hidden", String(i !== current));
+      });
+
+      segments.forEach((seg, i) => {
+        seg.classList.toggle("is-filled", i <= current);
+        seg.classList.toggle("is-current", i === current);
+        if (i === current) seg.setAttribute("aria-current", "step");
+        else seg.removeAttribute("aria-current");
+      });
+
+      prevBtn.setAttribute("aria-disabled", String(current === 0));
+      nextBtn.setAttribute("aria-disabled", String(current === last));
+
+      counter.innerHTML = current < certCount
+        ? `Certificate <strong>${current + 1}</strong> of ${certCount}`
+        : certCount ? "End of the current showcase" : "No certificates published yet";
+
+      ambient.dataset.tone = slides[current].dataset.tone;
+
+      if (!body.classList.contains("is-intro")) updateHash();
+
+      if (focus) {
+        const target = slides[current].querySelector(".slide__title, .teaser");
+        if (target) target.focus({ preventScroll: true });
+      }
+    }
+
+    const step = dir => goTo(current + dir);
+
+    function updateHash() {
+      const slide = slides[current];
+      const hash = slide.dataset.id ? `#certificate-${slide.dataset.id}` : "#more";
+      if (location.hash === hash) return;
+      try { history.replaceState(null, "", hash); } catch { /* sandboxed frame: ignore */ }
+    }
+
+    function indexFromHash() {
+      const m = /^#certificate-(.+)$/.exec(location.hash);
+      if (m) {
+        const i = certificatesData.findIndex(c => String(c.id) === decodeURIComponent(m[1]));
+        if (i >= 0) return i;
+      }
+      return location.hash === "#more" ? certCount : 0;
+    }
+
+    prevBtn.addEventListener("click", () => step(-1));
+    nextBtn.addEventListener("click", () => step(1));
+
+    progress.addEventListener("click", e => {
+      const seg = e.target.closest("[data-goto]");
+      if (seg) goTo(Number(seg.dataset.goto));
+    });
+
+    document.addEventListener("keydown", e => {
+      if (introActive) {
+        if (e.key === "Escape") finishIntro();
+        return;
+      }
+      if (!lightbox.hidden) {
+        if (e.key === "Escape") closeLightbox();
+        return;
+      }
+      if (e.altKey || e.ctrlKey || e.metaKey) return;
+      if (e.target.closest("input, textarea, select, [contenteditable]")) return;
+
+      if (e.key === "ArrowRight") { e.preventDefault(); step(1); }
+      else if (e.key === "ArrowLeft") { e.preventDefault(); step(-1); }
+      else if (e.key === "Home") { e.preventDefault(); goTo(0); }
+      else if (e.key === "End") { e.preventDefault(); goTo(slides.length - 1); }
+    });
+
+    /* Touch swipe with a light drag follow */
+    let touch = null;
+
+    stage.addEventListener("touchstart", e => {
+      if (e.touches.length !== 1) return;
+      touch = { x: e.touches[0].clientX, y: e.touches[0].clientY, dx: 0, horizontal: null };
+    }, { passive: true });
+
+    stage.addEventListener("touchmove", e => {
+      if (!touch) return;
+      const t = e.touches[0];
+      touch.dx = t.clientX - touch.x;
+      const dy = t.clientY - touch.y;
+      if (touch.horizontal === null && (Math.abs(touch.dx) > 8 || Math.abs(dy) > 8)) {
+        touch.horizontal = Math.abs(touch.dx) > Math.abs(dy);
+      }
+      if (touch.horizontal && !reducedMotion.matches) {
+        const atEdge = (touch.dx > 0 && current === 0) || (touch.dx < 0 && current === slides.length - 1);
+        const slide = slides[current];
+        slide.classList.add("is-dragging");
+        slide.style.transform = `translate3d(${touch.dx * (atEdge ? 0.12 : 0.3)}px,0,0)`;
+      }
+    }, { passive: true });
+
+    function endTouch() {
+      if (!touch) return;
+      const { dx, horizontal } = touch;
+      touch = null;
+      const slide = slides[current];
+      slide.classList.remove("is-dragging");
+      slide.style.transform = "";
+      if (horizontal && Math.abs(dx) > 48) step(dx < 0 ? 1 : -1);
+    }
+    stage.addEventListener("touchend", endTouch, { passive: true });
+    stage.addEventListener("touchcancel", endTouch, { passive: true });
+
+    /* 3D tilt + light sheen on the certificate card (mouse only) */
+    function bindTilt() {
+      if (!finePointer.matches || reducedMotion.matches) return;
+      stage.querySelectorAll(".card").forEach(card => {
+        const area = card.parentElement; // un-rotated wrapper, so the math stays stable
+        let raf = 0;
+        card.addEventListener("pointermove", e => {
+          if (e.pointerType !== "mouse") return;
+          const r = area.getBoundingClientRect();
+          const px = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
+          const py = Math.min(1, Math.max(0, (e.clientY - r.top) / r.height));
+          cancelAnimationFrame(raf);
+          raf = requestAnimationFrame(() => {
+            card.classList.add("is-tilting");
+            card.style.setProperty("--ry", `${((px - 0.5) * 9).toFixed(2)}deg`);
+            card.style.setProperty("--rx", `${((0.5 - py) * 7).toFixed(2)}deg`);
+            card.style.setProperty("--mx", `${(px * 100).toFixed(1)}%`);
+            card.style.setProperty("--my", `${(py * 100).toFixed(1)}%`);
+          });
+        });
+        card.addEventListener("pointerleave", () => {
+          cancelAnimationFrame(raf);
+          card.classList.remove("is-tilting");
+          card.style.setProperty("--rx", "0deg");
+          card.style.setProperty("--ry", "0deg");
+        });
+      });
+    }
+
+    /* Clicks inside slides: full size, copy, restart, placeholder links */
+    stage.addEventListener("click", e => {
+      const placeholder = e.target.closest("[data-placeholder-link]");
+      if (placeholder) { e.preventDefault(); return; }
+
+      const action = e.target.closest("[data-action]");
+      if (action) {
+        const type = action.dataset.action;
+        if (type === "expand") openLightbox(Number(action.dataset.cert), action);
+        else if (type === "copy") copyCredential(action);
+        else if (type === "restart") goTo(0, { focus: true });
+        return;
+      }
+
+      const frame = e.target.closest(".card__frame");
+      if (frame) {
+        const card = frame.closest(".card");
+        openLightbox(Number(frame.dataset.cert), card.querySelector("[data-action='expand']"));
+      }
+    });
+
+    async function copyCredential(btn) {
+      const text = btn.dataset.copy;
+      let ok = false;
+      try {
+        await navigator.clipboard.writeText(text);
+        ok = true;
+      } catch {
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        ta.setAttribute("readonly", "");
+        ta.style.cssText = "position:fixed;opacity:0;top:0;left:0";
+        document.body.appendChild(ta);
+        ta.select();
+        try { ok = document.execCommand("copy"); } catch { ok = false; }
+        ta.remove();
+      }
+      if (!ok) return;
+      btn.classList.add("is-copied");
+      btn.innerHTML = ICONS.check;
+      btn.setAttribute("aria-label", "Credential ID copied");
+      announcer.textContent = "Credential ID copied";
+      clearTimeout(btn._timer);
+      btn._timer = setTimeout(() => {
+        btn.classList.remove("is-copied");
+        btn.innerHTML = ICONS.copy;
+        btn.setAttribute("aria-label", "Copy credential ID");
+        announcer.textContent = "";
+      }, 1800);
+    }
+
+    /* ---------------------------------------------------------------------
+       Lightbox
+       --------------------------------------------------------------------- */
+    let lastFocus = null;
+
+    function openLightbox(i, trigger) {
+      const cert = certificatesData[i];
+      const img = slides[i].querySelector(".card__img");
+      lbImg.src = img.currentSrc || img.src;
+      lbImg.alt = img.alt;
+      lbCaption.innerHTML = `<strong>${escapeHTML(cert.title)}</strong>${escapeHTML(cert.issuer)}`;
+      lastFocus = trigger || document.activeElement;
+
+      lightbox.hidden = false;
+      void lightbox.offsetWidth; // start the fade from 0
+      lightbox.classList.add("is-open");
+      body.classList.add("is-locked");
+      app.inert = true;
+      lbClose.focus();
+    }
+
+    function closeLightbox() {
+      if (lightbox.hidden) return;
+      lightbox.classList.remove("is-open");
+      body.classList.remove("is-locked");
+      app.inert = false;
+      setTimeout(() => {
+        lightbox.hidden = true;
+        lbImg.removeAttribute("src");
+      }, 350);
+      if (lastFocus) lastFocus.focus({ preventScroll: true });
+    }
+
+    lbClose.addEventListener("click", closeLightbox);
+    lightbox.addEventListener("click", e => {
+      if (e.target === lightbox || e.target.classList.contains("lightbox__figure")) closeLightbox();
+    });
+
+    /* ---------------------------------------------------------------------
+       PHASE 1 — Intro video
+       --------------------------------------------------------------------- */
+    let introActive = true;
+    let introFinishing = false;
+    let progressRaf = 0;
+
+    function startIntro() {
+      introActive = true;
+      introFinishing = false;
+      body.classList.add("is-intro");
+      body.classList.remove("is-revealed");
+      app.inert = true;
+
+      introEl.hidden = false;
+      void introEl.offsetWidth;
+      introEl.classList.remove("is-leaving", "is-playing", "is-gated");
+      gate.hidden = true;
+      introBar.style.transform = "scaleX(0)";
+
+      if (video.error) { finishIntro({ instant: true }); return; }
+
+      try { video.currentTime = 0; } catch { /* not seekable yet */ }
+      video.volume = 1;
+      video.muted = false;
+      attemptPlay();
+    }
+
+    function attemptPlay() {
+      let promise;
+      try { promise = video.play(); } catch { finishIntro({ instant: true }); return; }
+      if (!promise || typeof promise.then !== "function") { onPlaying(); return; }
+
+      promise.then(onPlaying).catch(err => {
+        if (introFinishing || !introActive) return;
+        if (err && err.name === "NotAllowedError") showGate();       // sound autoplay blocked
+        else if (err && err.name === "AbortError") return;           // interrupted, ignore
+        else finishIntro({ instant: true });                          // missing / unsupported file
+      });
+    }
+
+    function showGate() {
+      introEl.classList.add("is-gated");
+      gate.hidden = false;
+    }
+
+    function onPlaying() {
+      if (!introActive) return;
+      gate.hidden = true;
+      introEl.classList.remove("is-gated");
+      introEl.classList.add("is-playing");
+      updateSoundButton();
+      cancelAnimationFrame(progressRaf);
+      const tick = () => {
+        if (video.duration) introBar.style.transform = `scaleX(${video.currentTime / video.duration})`;
+        progressRaf = requestAnimationFrame(tick);
+      };
+      tick();
+    }
+
+    function updateSoundButton() {
+      const muted = video.muted;
+      soundBtn.setAttribute("aria-pressed", String(muted));
+      soundLabel.textContent = muted ? "Sound on" : "Mute";
+      soundBtn.querySelector(".icon-sound-on").hidden = muted;
+      soundBtn.querySelector(".icon-sound-off").hidden = !muted;
+    }
+
+    enterBtn.addEventListener("click", () => {
+      video.muted = false;
+      video.play().then(onPlaying).catch(() => {
+        // Still blocked: play silently and let the viewer turn sound on
+        video.muted = true;
+        video.play().then(onPlaying).catch(() => finishIntro({ instant: true }));
+      });
+    });
+
+    soundBtn.addEventListener("click", () => {
+      video.muted = !video.muted;
+      if (!video.muted && video.volume === 0) video.volume = 1;
+      updateSoundButton();
+    });
+
+    skipBtn.addEventListener("click", () => finishIntro());
+    video.addEventListener("ended", () => finishIntro());
+    video.addEventListener("error", () => finishIntro({ instant: true }));
+
+    function fadeOutAudio(ms) {
+      if (video.muted || video.paused || !ms) return;
+      const start = performance.now();
+      const from = video.volume;
+      const fade = now => {
+        const k = Math.min(1, (now - start) / ms);
+        video.volume = Math.max(0, from * (1 - k));
+        if (k < 1) requestAnimationFrame(fade);
+      };
+      requestAnimationFrame(fade);
+    }
+
+    function finishIntro({ instant = false } = {}) {
+      if (!introActive || introFinishing) return;
+      introFinishing = true;
+      cancelAnimationFrame(progressRaf);
+      fadeOutAudio(instant ? 0 : 700);
+
+      body.classList.add("is-revealed");
+      introEl.classList.add("is-leaving");
+
+      const duration = instant || reducedMotion.matches ? 450 : 1200;
+      setTimeout(() => {
+        video.pause();
+        introEl.hidden = true;
+        introEl.classList.remove("is-playing", "is-gated");
+        body.classList.remove("is-intro");
+        app.inert = false;
+        introActive = false;
+        introFinishing = false;
+        updateHash();
+        pageTitle.focus({ preventScroll: true });
+      }, duration);
+    }
+
+    replayBtn.addEventListener("click", startIntro);
+
+    /* ---------------------------------------------------------------------
+       Boot
+       --------------------------------------------------------------------- */
+    renderChrome();
+    renderSlides();
+    bindTilt();
+    goTo(indexFromHash());
+    startIntro();
+  })();
+  </script>
+</body>
+</html>
