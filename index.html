@@ -987,46 +987,81 @@
     /* =====================================================================
        RESPONSIVE
        ===================================================================== */
-    @media (max-width: 960px) {
-      /* Stacked layout: the stage follows the active slide's height instead of the tallest one */
-      .stage { position: relative; display: block; }
-      .slide:not(.is-active) { position: absolute; top: 0; left: 0; right: 0; max-height: 100%; overflow: hidden; }
-      .slide {
-        grid-template-columns: minmax(0, 1fr);
-        align-items: start;
-        align-content: start;
-      }
-    }
+    /* =====================================================================
+   تعديلات تكبير الصورة والنصوص (تطبق فقط على الشاشات الكبيرة)
+   ===================================================================== */
+@media (min-width: 961px) {
+  .shell {
+    width: min(1420px, calc(100% - 2 * var(--gutter)));
+  }
 
-    @media (max-width: 560px) {
-      .label-sm-hidden {
-        position: absolute !important;
-        width: 1px; height: 1px;
-        overflow: hidden;
-        clip: rect(0 0 0 0);
-        white-space: nowrap;
-      }
-      .ghost-btn { width: 40px; padding: 0; justify-content: center; }
-      .card__badge, .card__expand { height: 32px; padding: 0 12px; font-size: 12px; }
-      .card__badge { top: 10px; left: 10px; }
-      .card__expand { right: 10px; bottom: 10px; width: 32px; padding: 0; justify-content: center; }
-      .nav-btn { width: 46px; height: 46px; }
-      .head-nav { width: 100%; justify-content: space-between; }
-      .slide__desc { font-size: 15px; }
-      .meta { gap: 14px 28px; }
-      .status--footer { font-size: 13px; }
-    }
+  .showcase {
+    margin-block: auto;
+    padding-block: clamp(20px, 3vh, 40px);
+  }
 
-    @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after {
-        animation-duration: 0.001ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.2s !important;
-        transition-delay: 0s !important;
-      }
-      .slide { --shift: 0px !important; }
-      .app, .intro.is-leaving .intro__video { transform: none !important; }
-    }
+  .site-footer {
+    padding-top: clamp(24px, 3.5vh, 44px);
+  }
+
+  .slide {
+    grid-template-columns: minmax(0, 1.18fr) minmax(0, 1fr);
+    gap: clamp(24px, 3.5vw, 54px);
+    align-items: stretch;
+  }
+
+  .panel {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: clamp(28px, 3.2vw, 46px);
+  }
+
+  .slide__desc {
+    margin: 22px 0 0;
+    max-width: 62ch;
+    font-size: clamp(16.5px, 1.3vw, 18.5px);
+    line-height: 1.75;
+  }
+
+  .skills {
+    gap: 10px;
+    margin: 26px 0 0;
+  }
+
+  .skills li {
+    padding: 10px 18px;
+    font-size: clamp(14px, 1.05vw, 15.5px);
+  }
+
+  .issuer__mark {
+    width: 48px;
+    height: 48px;
+    font-size: 15px;
+  }
+
+  .issuer__name {
+    font-size: 15.5px;
+  }
+
+  .slide__title {
+    margin: 20px 0 0;
+    font-size: clamp(28px, 2.7vw, 40px);
+  }
+}
+
+/* تحسين إضافي للموبايل لترتيب العناصر عمودياً بسلاسة */
+@media (max-width: 960px) {
+  .slide {
+    display: flex !important;
+    flex-direction: column;
+    gap: 20px;
+  }
+  .slide__preview,
+  .slide__info {
+    width: 100%;
+  }
+}
     /* =====================================================================
        تعديلات تكبير الصورة والنصوص واستغلال المساحة الفارغة
        ===================================================================== */
@@ -1097,8 +1132,7 @@
   </style>
 </head>
 
-<body class="is-intro">
-
+<body class="is-revealed">
   <!-- Ambient background -->
   <div class="ambient" id="ambient" data-tone="0" aria-hidden="true">
     <span class="glow glow--indigo"></span>
@@ -1111,8 +1145,8 @@
   <!-- ===================================================================
        PHASE 1 — CINEMATIC INTRO
        =================================================================== -->
-  <section class="intro" id="intro" aria-label="Intro video">
-    <!--
+      <section class="intro" id="intro" aria-label="Intro video" hidden style="display: none;">
+        <!--
       🎬 INTRO VIDEO SOURCE
       Replace src="cer.mp4" with your own file, for example src="your-intro.mp4",
       or with a full URL such as src="https://your-cdn.com/intro.mp4".
@@ -1170,7 +1204,7 @@
           <p class="identity__role" id="ownerRole"></p>
         </div>
       </div>
-      <button class="ghost-btn" id="replayBtn" type="button">
+      <button class="ghost-btn" id="replayBtn" type="button" style="display: none;">
         <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
         <span class="label-sm-hidden">Replay intro</span>
       </button>
@@ -1957,11 +1991,21 @@ description: "Completed the foundational 5-module course of the IBM Machine Lear
     /* ---------------------------------------------------------------------
        Boot
        --------------------------------------------------------------------- */
-    renderChrome();
-    renderSlides();
-    bindTilt();
-    goTo(indexFromHash());
-    startIntro();
+      /* ---------------------------------------------------------------------
+   Boot
+   --------------------------------------------------------------------- */
+renderChrome();
+renderSlides();
+bindTilt();
+goTo(indexFromHash());
+
+// لإيقاف الفيديو ودخول الموقع مباشرة:
+app.inert = false;
+updateHash();
+
+// مستقبلاً عند الرغبة بإعادة تشغيل الفيديو:
+// احذف السطرين بالأعلى وفعل السطر التالي مجدداً:
+// startIntro();
   })();
   </script>
 </body>
